@@ -4,6 +4,7 @@
 #include <FastLED.h> // only included for some math functions. Must be included before (Pololu's) APA102.h or else there will be namespace conflicts
 
 #include <APA102.h>
+#include <AStar32U4.h>
 
 // Define which pins to use.
 uint8_t const dataPin = 11;
@@ -22,6 +23,8 @@ uint8_t const colHeight[cols] = { 9, 16, 18, 20, 21, 20, 18, 16, 11 }; // number
 uint8_t const colOffset[cols] = { 8,  2,  0,  0,  0,  0,  0,  1,  6 }; // vertical offset of each column (= # of LEDs missing from bottom of each column)
 
 uint8_t const brightness = 4; // 0 to 31
+
+AStar32U4ButtonA buttonA;
 
 void setup()
 {
@@ -127,18 +130,29 @@ void rainbowNoise()
   }
 }
 
+uint8_t const NumPatterns = 2;
+void (*patternFunction[NumPatterns])() = { redGoldWave, rainbowNoise };
+
 void loop()
 {
+  static uint8_t pattern = 0;
+  
   static uint8_t lastMs = 0;
   uint8_t ms = millis();
   
   if ((uint8_t)(ms - lastMs) > 10)
   {
-    redGoldWave();
+    (*patternFunction[pattern])();
   
     setColorsFromFullMatrix();
     ledStrip.write(colors, ledCount, brightness);
 
     lastMs = ms;
+  }
+
+  if (buttonA.getSingleDebouncedRelease())
+  {
+    pattern++;
+    if (pattern >= NumPatterns) { pattern = 0; }
   }
 }
